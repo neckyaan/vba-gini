@@ -1,0 +1,81 @@
+Function gini(Quantity As String, GValue As String, Judge As Integer)
+    '''拆分生成样本
+    Dim Arr As Variant '定义一个Variant类型的变量，存储读取表的两列数据
+    Dim a_tmp() '临时数组，存储样本计数等
+    Dim b_tmp() '临时数组，存储样本数值
+    Dim c_tmp() '临时数组，存储还原后的样本数值，排序后也在本数组
+    Dim d_tmp() '临时数组，用于计算B的面积
+
+    a = Quantity  '参数A，为样本数量
+    b = GValue  '参数B ，为样本值
+    c = Judge      '参数C，当为0是样本值是合计，为1时为平均值
+    
+    a_tmp = Range(a).Value
+    b_tmp = Range(b).Value
+    Arr = Range(a, b).Value    '将A:B中保存的数据存储到数组arr里
+    sum_count_a = Int(Application.Sum(a_tmp()))  '求总人数
+    If c = 0 Then
+        sum_count_b = Application.Sum(b_tmp()) '求以合计形式累计的总收入值
+    Else
+        sum_count_b = 0
+        For i = 1 To UBound(Arr)
+            sum_count_b = sum_count_b + (Arr(i, 1) * Arr(i, 2)) '求以平均形式累计的总收入值
+        Next i
+    End If
+    '对原始数据进行升序排列(这里应该用平均值即单个样本值来进行升序排列)
+    If c = 0 Then
+      '合计形式
+      For i = 1 To UBound(Arr)
+        Arr(i, 2) = Arr(i, 2) / Arr(i, 1)
+      Next i
+    Else
+      '平均形式不用改变
+    End If
+    sr = Array(2, 1) '按权重优先顺序key、Sort值交替排列的一维数组。key为列序号、Sort值：1升序、2降序，这里对第二列就是数值列进行排序，还可以这样写Array(2, 1,1,2)
+    Arr = Scor2.szpx(Arr, 0, sr) '第1参数为待排序二维数组、第2参数为不参与排序的标题行的行数\第三参数为排序方式定义-sr
+    '排序结束
+    
+    
+    '生成还原后的单个样本
+    ReDim c_tmp(1 To sum_count_a)
+    k = 0
+    For i = 1 To UBound(Arr)
+        For j = 1 To Int(Arr(i, 1))
+            k = k + 1
+            
+                c_tmp(k) = Arr(i, 2)  '直接读取值，这里已经将Arr(i,2转换成了)平均值-单个样本值
+
+        Next j
+    Next i
+   
+   
+   ''生成样本计数累加占比数组初始
+   ReDim a_tmp(sum_count_a)
+   ctmp = 0
+   a_tmp(0) = 0
+   '生成样本数值累加占比数组初始
+   ReDim b_tmp(sum_count_a)
+   btmp = 0
+   b_tmp(0) = 0
+   ''生成B的面积初始
+   ReDim d_tmp(1 To sum_count_a)
+   b_s = 0
+   s = 0
+   For i = 1 To UBound(c_tmp)
+      '生成样本计数累加占比数组，X列
+      ctmp = ctmp + 1
+      a_tmp(i) = ctmp / sum_count_a
+     
+      '生成样本数值累加占比数组，Y列
+      btmp = btmp + c_tmp(i)
+      b_tmp(i) = btmp / sum_count_b
+    
+      '梯形积分法生成B的面积
+      s = (b_tmp(i - 1) + b_tmp(i)) * (a_tmp(i) - a_tmp(i - 1)) * 0.5 ' 梯形面积
+      d_tmp(i) = s
+      b_s = b_s + s
+      
+   Next i
+  '生成基尼系数返回值
+  gini = 1 - 2 * b_s
+End Function
